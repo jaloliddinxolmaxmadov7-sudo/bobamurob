@@ -1,0 +1,39 @@
+plugins { id "com.android.application" }
+
+android {
+    namespace "uz.autolife.game"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "uz.autolife.game"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "0.6"
+    }
+
+    // Release signing: put your keystore details in GitHub Secrets (see README); without them a debug APK is built.
+    signingConfigs {
+        release {
+            def ks = System.getenv("UZ_KEYSTORE_FILE")
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv("UZ_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("UZ_KEY_ALIAS")
+                keyPassword System.getenv("UZ_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv("UZ_KEYSTORE_FILE")) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    // 3D models and fonts are already compressed — storing them as-is keeps the APK fast to open.
+    androidResources { noCompress += ["glb", "woff2", "webp", "png"] }
+}

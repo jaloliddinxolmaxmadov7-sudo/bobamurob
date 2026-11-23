@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>UZ Auto Life</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout: full-screen 3D stage; HUD pinned to the corners; menus are slanted neon sheets over the live city.
+   Palette: night street — ink blue-black, electric cyan, hot magenta, amber. Single dark look by design. */
+:root {
+  --ink: #05070f;
+  --glass: rgba(7, 10, 22, 0.72);
+  --glass-2: rgba(9, 13, 28, 0.9);
+  --line: rgba(25, 227, 255, 0.28);
+  --text: #f1f5ff;
+  --muted: #93a0bd;
+  --cy: #19e3ff;
+  --mg: #ff2e88;
+  --gold: #ffb020;
+  --danger: #ff4d4d;
+  --ok: #5dff9b;
+  --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --feruza: #1cc6b8;
+  --lajuvard: #2453c9;
+  --anor: #d8323a;
+  --girih: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='#f2b33d' stroke-width='1.1' opacity='0.9'%3E%3Crect x='16' y='16' width='24' height='24'/%3E%3Crect x='16' y='16' width='24' height='24' transform='rotate%2845 28 28%29'/%3E%3Ccircle cx='28' cy='28' r='5'/%3E%3Cpath d='M0 0L11 11M56 0L45 11M0 56L11 45M56 56L45 45'/%3E%3C/g%3E%3C/svg%3E");
+  --atlas: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='8' viewBox='0 0 48 8'%3E%3Crect width='48' height='8' fill='#1b2a6b'/%3E%3Cpath d='M0 4L6 0L12 4L6 8Z' fill='#1cc6b8'/%3E%3Cpath d='M12 4L18 0L24 4L18 8Z' fill='#f2b33d'/%3E%3Cpath d='M24 4L30 0L36 4L30 8Z' fill='#d8323a'/%3E%3Cpath d='M36 4L42 0L48 4L42 8Z' fill='#f4efe2'/%3E%3Cpath d='M4 4L6 2.6L8 4L6 5.4Z' fill='#1b2a6b'/%3E%3Cpath d='M16 4L18 2.6L20 4L18 5.4Z' fill='#1b2a6b'/%3E%3Cpath d='M28 4L30 2.6L32 4L30 5.4Z' fill='#1b2a6b'/%3E%3Cpath d='M40 4L42 2.6L44 4L42 5.4Z' fill='#1b2a6b'/%3E%3C/svg%3E");
+  --cut: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--ink); color: var(--text); font: 14px var(--body); overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+button { font-family: var(--body); color: var(--text); cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Screens ---------- */
+.screen { position: fixed; inset: 0; display: grid; place-items: center; padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); z-index: 30; overflow-y: auto; }
+.scrim { background: radial-gradient(120% 90% at 20% 30%, rgba(5,7,15,0.2), rgba(5,7,15,0.9) 72%); }
+.side { justify-items: end; background: linear-gradient(90deg, rgba(5,7,15,0) 30%, rgba(5,7,15,0.82) 75%); }
+.sheet { position: relative; background: var(--glass-2); border: 1px solid var(--line); border-left: 3px solid var(--cy); padding: 20px 22px; width: min(540px, 100%); box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 40px rgba(25,227,255,0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); max-height: 100%; overflow-y: auto; }
+.side .sheet { width: min(430px, 100%); border-left-color: var(--mg); }
+.sheet h2 { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 22px; margin: 0 0 12px; letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance; }
+.sheet h3 { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--cy); margin: 16px 0 8px; }
+.sheet p { color: var(--muted); line-height: 1.5; margin: 0 0 12px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: rgba(255,255,255,0.05); padding: 11px 20px; font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; clip-path: var(--cut); transition: transform .08s, background .15s, filter .15s; }
+.btn:active { transform: scale(0.97); }
+.btn:hover { background: rgba(25,227,255,0.14); }
+.btn.primary { background: linear-gradient(100deg, var(--cy), #0aa4ff); border-color: transparent; color: #021018; }
+.btn.gold { background: linear-gradient(100deg, #ffd060, var(--gold)); border-color: transparent; color: #2a1a00; }
+.btn.hot { background: linear-gradient(100deg, var(--mg), #ff6a3d); border-color: transparent; color: #fff; }
+.btn.primary:hover, .btn.gold:hover, .btn.hot:hover { filter: brightness(1.12); }
+.btn.danger { border-color: rgba(255,77,77,0.5); color: #ffb1a8; }
+.btn[disabled] { opacity: .4; pointer-events: none; }
+.btn.sm { min-height: 36px; padding: 6px 14px; font-size: 13px; }
+.grow { flex: 1 1 140px; }
+
+/* Main menu */
+#menu { justify-items: start; align-items: center; }
+.menu-col { display: grid; gap: 18px; width: min(460px, 100%); padding-left: clamp(0px, 4vw, 52px); }
+.logo h1 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 700; font-size: clamp(44px, 9vw, 76px); line-height: 0.86; letter-spacing: -0.01em; text-shadow: 0 0 28px rgba(25,227,255,0.55); }
+.logo h1 em { font-style: italic; color: var(--mg); text-shadow: 0 0 28px rgba(255,46,136,0.7); }
+.logo span { display: block; font-family: var(--display); font-weight: 600; color: var(--gold); font-size: 13px; letter-spacing: 0.42em; margin-top: 10px; }
+.menu-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { background: var(--glass); border: 1px solid var(--line); padding: 6px 16px; font-family: var(--display); font-weight: 600; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; clip-path: var(--cut); }
+.chip b { color: var(--gold); }
+.menu-btns { display: grid; gap: 9px; }
+.menu-btns .btn { justify-content: flex-start; font-size: 17px; padding: 13px 26px; }
+.menu-note { font-size: 12px; color: var(--muted); line-height: 1.7; }
+kbd { font-family: var(--body); font-size: 11px; background: rgba(255,255,255,0.1); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; }
+
+/* Loading */
+#loading { z-index: 40; background: var(--ink); }
+.load-box { width: min(420px, 100%); display: grid; gap: 16px; }
+.bar { height: 7px; background: rgba(255,255,255,0.09); overflow: hidden; transform: skewX(-18deg); }
+.bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cy), var(--mg)); transition: width .15s; }
+#loadTxt { color: var(--muted); font-size: 13px; }
+
+/* Forms & lists */
+.field { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.08); }
+.field:first-of-type { border-top: 0; }
+.field label { font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { flex: 1 1 80px; border: 1px solid var(--line); background: rgba(255,255,255,0.05); padding: 9px; font-weight: 700; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--cy); color: #021018; border-color: transparent; }
+input[type=range] { width: 100%; accent-color: var(--cy); }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 14px; margin: 0 0 12px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.tx { max-height: 150px; overflow-y: auto; border-top: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px; }
+.tx div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.tx .plus { color: var(--ok); font-weight: 800; }
+.tx .minus { color: #ffb1a8; font-weight: 800; }
+.tag { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+.wide { width: min(820px, 100%); }
+
+/* Mission board */
+.jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.job { border: 1px solid rgba(255,255,255,0.1); border-top: 3px solid var(--c, var(--cy)); background: rgba(255,255,255,0.035); padding: 12px; display: grid; gap: 6px; align-content: start; }
+.job h4 { margin: 0; font-family: var(--display); font-style: italic; font-size: 17px; text-transform: uppercase; color: var(--c, var(--cy)); }
+.job p { margin: 0; font-size: 12.5px; line-height: 1.45; }
+.job .pay { font-family: var(--display); font-weight: 700; font-size: 15px; color: var(--gold); }
+.job .row { gap: 6px; margin-top: 4px; }
+.job small { color: var(--muted); font-size: 11.5px; }
+
+/* Cars & tuning */
+.carlist { display: grid; gap: 6px; }
+.carrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; text-align: left; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.035); padding: 9px 12px; }
+.carrow b { font-family: var(--display); font-style: italic; font-size: 16px; text-transform: uppercase; }
+.carrow small { color: var(--muted); grid-column: 1; }
+.carrow span { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-family: var(--display); font-weight: 700; color: var(--gold); font-size: 13px; }
+.carrow[aria-pressed="true"] { border-color: var(--mg); background: rgba(255,46,136,0.12); }
+.carrow .own { color: var(--ok); }
+.meter { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: center; font-size: 12px; font-weight: 700; color: var(--muted); margin: 5px 0; }
+.meter .bar { height: 6px; }
+.up { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.up b { font-size: 14px; } .up small { color: var(--muted); font-size: 12px; grid-column: 1; }
+.up .btn { grid-row: 1 / span 2; grid-column: 2; }
+.pips { display: inline-flex; gap: 3px; margin-left: 8px; vertical-align: middle; }
+.pips i { width: 14px; height: 5px; background: rgba(255,255,255,0.15); transform: skewX(-20deg); }
+.pips i.on { background: var(--cy); box-shadow: 0 0 8px var(--cy); }
+.sw { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.sw button { width: 34px; height: 34px; border: 2px solid rgba(255,255,255,0.18); background: var(--c); padding: 0; transform: skewX(-10deg); }
+.sw button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 14px var(--c); }
+.sw .off { background: transparent; font-size: 11px; font-weight: 800; width: auto; padding: 0 10px; }
+.sw small { color: var(--muted); margin-left: 4px; }
+.cashline { font-family: var(--display); font-weight: 700; color: var(--gold); font-size: 16px; margin-bottom: 4px; }
+.note { font-size: 12px; min-height: 16px; color: #ffb1a8; margin-top: 8px; }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+#hud > * { pointer-events: auto; }
+.panel { background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.tl { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); padding: 9px 14px 10px; display: grid; gap: 6px; width: 196px; border-left: 3px solid var(--gold); }
+.cash { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 19px; color: var(--gold); text-shadow: 0 0 14px rgba(255,176,32,0.5); }
+.lvl { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.lvl .bar { flex: 1; height: 5px; }
+.stat { display: grid; grid-template-columns: 16px 1fr 40px; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; }
+.stat svg { width: 14px; height: 14px; }
+.stat .bar { height: 6px; }
+.stat span { text-align: right; }
+.warn .bar > i { background: var(--danger) !important; }
+.warn { animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .45; } }
+
+.tr { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); display: flex; gap: 8px; align-items: flex-start; }
+#mini { width: 210px; height: 210px; border-radius: 50%; border: 2px solid var(--cy); box-shadow: 0 0 18px rgba(25,227,255,0.45), inset 0 0 20px rgba(0,0,0,0.6); background: #0b1020; display: block; cursor: pointer; }
+.tools { display: grid; grid-template-columns: 40px 40px; gap: 6px; }
+.ibtn { width: 40px; height: 40px; background: var(--glass); border: 1px solid var(--line); display: grid; place-items: center; padding: 0; transform: skewX(-8deg); }
+.ibtn svg { width: 19px; height: 19px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transform: skewX(8deg); }
+.ibtn:hover { border-color: var(--cy); }
+.ibtn.on { border-color: var(--gold); }
+.ibtn.off svg { stroke: var(--danger); }
+.ibtn.hl { border-color: var(--mg); box-shadow: 0 0 12px rgba(255,46,136,0.5); }
+
+#mcard { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 8px 22px 9px; min-width: 240px; max-width: min(400px, 42vw); text-align: center; clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 16px 100%); border: 0; border-top: 3px solid var(--mg); }
+#mcard .tag { display: block; margin-bottom: 1px; color: var(--mg); }
+#mcard .dest { font-weight: 800; font-size: 14px; line-height: 1.25; }
+#mcard .meta { display: flex; justify-content: center; gap: 16px; margin-top: 3px; font-family: var(--display); font-style: italic; font-weight: 700; font-size: 17px; }
+#mcard .meta .low { color: var(--danger); }
+#mcDist { color: var(--cy); }
+
+#big { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) skewX(-8deg); font-family: var(--display); font-style: italic; font-weight: 700; font-size: clamp(60px, 16vw, 150px); color: #fff; text-shadow: 0 0 30px var(--cy), 0 0 70px var(--mg); pointer-events: none !important; transition: opacity .25s; white-space: nowrap; }
+#big.sm { font-size: clamp(28px, 6vw, 56px); top: 24%; }
+
+#gauge { position: absolute; bottom: calc(8px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: 230px; padding: 6px 18px 10px; clip-path: polygon(18px 0, calc(100% - 18px) 0, 100% 100%, 0 100%); background: linear-gradient(180deg, rgba(7,10,22,0.35), rgba(7,10,22,0.85)); border: 0; border-top: 2px solid var(--cy); display: grid; gap: 5px; pointer-events: none !important; }
+.g-top { display: flex; align-items: flex-end; justify-content: center; gap: 12px; }
+.g-spd { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 54px; line-height: 0.9; text-shadow: 0 0 22px rgba(25,227,255,0.65); min-width: 96px; text-align: right; }
+.g-unit { display: grid; gap: 3px; padding-bottom: 4px; }
+.g-unit small { font-family: var(--display); font-size: 10px; font-weight: 700; letter-spacing: .14em; color: var(--muted); }
+.g-gear { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 20px; color: var(--gold); line-height: 1; }
+.segbar { height: 8px; background: rgba(255,255,255,0.1); transform: skewX(-22deg); overflow: hidden; position: relative; }
+.segbar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--cy) 60%, var(--gold) 84%, var(--danger)); background-size: 194px 100%; }
+.segbar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 9px, rgba(5,7,15,0.9) 9px 11px); }
+.segbar.nitro { height: 5px; }
+.segbar.nitro > i { background: linear-gradient(90deg, #2a7bff, var(--cy)); box-shadow: 0 0 10px var(--cy); }
+.g-rpm { display: flex; justify-content: space-between; font-family: var(--display); font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .1em; }
+
+#svc { position: absolute; bottom: calc(118px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(380px, 50vw); padding: 12px 14px; display: grid; gap: 8px; border-left: 3px solid var(--cy); }
+#svc h3 { margin: 0; font-family: var(--display); font-style: italic; font-size: 16px; font-weight: 700; text-transform: uppercase; }
+#svc .line { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+#svc .line b { color: var(--text); font-variant-numeric: tabular-nums; }
+#svc .btn { min-height: 38px; padding: 7px 14px; font-size: 13px; }
+#svcMsg { font-size: 12px; color: #ffb1a8; min-height: 0; }
+
+#toast { position: absolute; top: calc(96px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 8px 20px; font-weight: 800; font-size: 13px; text-align: center; max-width: min(440px, 46vw); transition: opacity .3s; pointer-events: none !important; clip-path: var(--cut); border: 0; background: rgba(7,10,22,0.86); }
+#fps { position: absolute; bottom: calc(8px + env(safe-area-inset-bottom)); left: calc(10px + env(safe-area-inset-left)); font-size: 11px; font-weight: 800; padding: 4px 8px; pointer-events: none !important; }
+#keys { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); right: calc(10px + env(safe-area-inset-right)); padding: 9px 12px; font-size: 12px; color: var(--muted); display: grid; gap: 4px; pointer-events: none !important; }
+
+/* Touch controls */
+#touch { position: fixed; inset: 0; z-index: 11; pointer-events: none; }
+#touch > * { pointer-events: auto; touch-action: none; }
+#wheel { position: absolute; left: calc(18px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); width: 148px; height: 148px; border-radius: 50%; }
+#wheel svg { width: 100%; height: 100%; }
+.sbtns { position: absolute; left: calc(14px + env(safe-area-inset-left)); bottom: calc(18px + env(safe-area-inset-bottom)); display: flex; gap: 12px; }
+.pad { width: 74px; height: 74px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 13px; }
+.pad svg { width: 28px; height: 28px; stroke: var(--text); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.pad.held { background: var(--cy); color: #021018; }
+.pad.held svg { stroke: #021018; }
+.pedals { position: absolute; right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; gap: 10px; align-items: end; }
+#pGas { width: 70px; height: 120px; grid-row: 1 / span 2; grid-column: 2; }
+#pBrake { width: 96px; height: 74px; grid-column: 1; grid-row: 2; }
+.minis { grid-column: 1; grid-row: 1; display: flex; gap: 6px; justify-content: flex-end; }
+.minis .pad { width: 42px; height: 42px; border-radius: 10px; font-size: 12px; }
+#pNitro { border-color: var(--cy); color: var(--cy); }
+
+#rotate { z-index: 50; background: var(--ink); text-align: center; }
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 14px; align-items: start; }
+#bigmap { width: 100%; aspect-ratio: 1; max-width: 100%; border: 1px solid var(--line); background: #0b1020; display: block; }
+.navlist { display: grid; gap: 6px; }
+.navlist .btn { justify-content: flex-start; font-size: 12px; min-height: 34px; padding: 6px 12px; clip-path: none; text-transform: none; letter-spacing: 0; font-family: var(--body); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+@media (max-width: 620px) { .mapwrap { grid-template-columns: 1fr; } }
+
+@media (max-height: 430px) {
+  #mini { width: 150px; height: 150px; }
+  .ibtn { width: 34px; height: 34px; }
+  .tools { grid-template-columns: 34px 34px; gap: 5px; }
+  .tl { width: 168px; padding: 7px 10px; gap: 4px; }
+  #gauge { width: 190px; padding: 4px 16px 7px; }
+  .g-spd { font-size: 40px; min-width: 74px; }
+  #svc { bottom: calc(92px + env(safe-area-inset-bottom)); }
+  #toast { top: calc(78px + env(safe-area-inset-top)); }
+  #wheel { width: 124px; height: 124px; }
+  #pGas { height: 100px; }
+  .sheet { padding: 14px 16px; }
+}
+
+/* ---------- Oʻzbekcha naqshlar: atlas band on every sheet, faint girih tilework behind it ---------- */
+.sheet::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: var(--atlas); background-size: 48px 6px; opacity: .95; }
+.sheet { padding-top: 26px; }
+.sheet::after { content: ""; position: absolute; inset: 0; background: var(--girih); background-size: 56px 56px; opacity: .07; pointer-events: none; }
+.sheet > * { position: relative; z-index: 1; }
+.btn.primary { background: linear-gradient(100deg, var(--feruza), #19a6e0 60%, var(--lajuvard)); color: #021018; }
+.btn.uz { background: linear-gradient(100deg, var(--anor), #f06a3a); border-color: transparent; color: #fff; }
+.logo { position: relative; }
+.logo .star8 { position: absolute; width: 230px; height: 230px; left: -62px; top: -64px; opacity: .22; pointer-events: none; animation: spin8 60s linear infinite; z-index: -1; }
+@keyframes spin8 { to { transform: rotate(360deg); } }
+.logo span.sub { color: var(--feruza); letter-spacing: .3em; }
+.atlas-line { height: 5px; background: var(--atlas); background-size: 40px 5px; width: min(360px, 80%); opacity: .9; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.tl { border-left: 0; padding-left: 16px; }
+.tl::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--atlas); background-size: 8px 48px; }
+.tl { position: absolute; }
+.coins { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 700; font-size: 13px; color: #ffd76a; }
+.coins i { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3b0, #f2b33d 55%, #a86a10); box-shadow: 0 0 8px rgba(242,179,61,.7); }
+.credits { margin: 6px 0 12px; font-size: 12px; color: var(--muted); }
+.credits summary { cursor: pointer; font-weight: 700; color: var(--text); padding: 6px 0; }
+.credits ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.6; }
+.clock { font-family: var(--display); font-weight: 700; font-size: 12px; letter-spacing: .06em; color: var(--feruza); }
+.lookhint { position: absolute; bottom: calc(118px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--muted); pointer-events: none !important; transition: opacity .4s; }
+.proverb { font-style: italic; color: var(--feruza); font-size: 13px; min-height: 18px; }
+/* Daily quests */
+.quests { display: grid; gap: 8px; margin-bottom: 14px; }
+.quest { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; border: 1px solid rgba(255,255,255,.1); border-left: 3px solid var(--feruza); background: rgba(28,198,184,.05); padding: 9px 12px; }
+.quest b { font-size: 14px; }
+.quest small { color: var(--muted); font-size: 12px; }
+.quest .bar { grid-column: 1; height: 6px; }
+.quest .bar > i { background: linear-gradient(90deg, var(--feruza), var(--gold)); }
+.quest .btn { grid-row: 1 / span 3; grid-column: 2; }
+.quest.done { border-left-color: var(--gold); }
+.quest.claimed { opacity: .5; }
+.combo { color: var(--gold); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<!-- Loading -->
+<section id="loading" class="screen">
+  <div class="load-box">
+    <div class="logo"><svg class='star8' viewBox='0 0 100 100' aria-hidden='true'><g fill='none' stroke='#f2b33d' stroke-width='2'><rect x='22' y='22' width='56' height='56'/><rect x='22' y='22' width='56' height='56' transform='rotate(45 50 50)'/><circle cx='50' cy='50' r='16'/><rect x='38' y='38' width='24' height='24' transform='rotate(45 50 50)'/></g></svg><h1>UZ AUTO <em>LIFE</em></h1><span class="sub">OʻZBEKISTON · TUNGI SHAHAR</span></div>
+    <div class="atlas-line"></div>
+    <div class="bar"><i id="loadBar"></i></div>
+    <div id="loadTxt">Shahar quriladi…</div>
+    <div class="proverb" id="loadProverb"></div>
+  </div>
+</section>
+
+<!-- Main menu -->
+<section id="menu" class="screen scrim" hidden>
+  <div class="menu-col">
+    <div class="logo"><svg class='star8' viewBox='0 0 100 100' aria-hidden='true'><g fill='none' stroke='#f2b33d' stroke-width='2'><rect x='22' y='22' width='56' height='56'/><rect x='22' y='22' width='56' height='56' transform='rotate(45 50 50)'/><circle cx='50' cy='50' r='16'/><rect x='38' y='38' width='24' height='24' transform='rotate(45 50 50)'/></g></svg><h1>UZ AUTO <em>LIFE</em></h1><span class="sub">OʻZBEKISTON · TUNGI SHAHAR</span></div>
+    <div class="atlas-line"></div>
+    <div class="proverb" id="menuProverb"></div>
+    <div class="menu-stats">
+      <span class="chip">Pul <b id="mCash" class="num">—</b></span>
+      <span class="chip">Daraja <b id="mLvl" class="num">1</b></span>
+      <span class="chip">Missiyalar <b id="mJobs" class="num">0</b></span>
+      <span class="chip" hidden>Tangalar <b id="mCoins" class="num">0</b></span>
+    </div>
+    <div class="menu-btns">
+      <button class="btn primary" id="bContinue" hidden>Davom etish</button>
+      <button class="btn" id="bPlay">Yangi oʻyin</button>
+      <button class="btn" id="bQuests" hidden>Kunlik topshiriqlar</button>
+      <button class="btn" id="bGarage">Garaj</button>
+      <button class="btn" id="bSettings">Sozlamalar</button>
+    </div>
+    <div class="menu-note" id="menuNote"><kbd>W A S D</kbd> haydash · <kbd>Probel</kbd> qoʻl tormozi · <kbd>Shift</kbd> nitro · <kbd>J</kbd> missiyalar · <kbd>M</kbd> xarita · <kbd>C</kbd> kamera · <kbd>R</kbd> tiklash · <kbd>E</kbd> dvigatel · <kbd>H</kbd> signal · <kbd>L</kbd> sirena</div>
+  </div>
+</section>
+
+<!-- Confirm new game -->
+<section id="confirmNew" class="screen scrim" hidden>
+  <div class="sheet">
+    <h2>Yangi oʻyin boshlansinmi?</h2>
+    <p>Saqlangan natijangiz (pul, daraja, mashinalar, tyuning) oʻchiriladi va 500 000 soʻm bilan qaytadan boshlaysiz.</p>
+    <div class="row"><button class="btn danger grow" id="bNewYes">Ha, qaytadan</button><button class="btn grow" id="bNewNo">Bekor qilish</button></div>
+  </div>
+</section>
+
+<!-- Settings -->
+<section id="settings" class="screen scrim" hidden>
+  <div class="sheet">
+    <h2>Sozlamalar</h2>
+    <div class="field"><label>Grafika sifati</label>
+      <div class="seg" data-key="quality"><button data-v="low">Past</button><button data-v="mid">Oʻrta</button><button data-v="high">Yuqori</button></div></div>
+    <div class="field"><label>Kun vaqti</label>
+      <div class="seg" data-key="tod"><button data-v="auto">Avto</button><button data-v="morning">Tong</button><button data-v="day">Kun</button><button data-v="evening">Kechqurun</button><button data-v="night">Tun</button></div></div>
+    <div class="field"><label>Boshqaruv (telefon)</label>
+      <div class="seg" data-key="controls"><button data-v="wheel">Rul</button><button data-v="buttons">Tugmalar</button></div></div>
+    <div class="field"><label for="sSens">Rul sezgirligi <span id="sSensV" class="num">100%</span></label><input type="range" id="sSens" min="0.5" max="1.5" step="0.05"></div>
+    <div class="field"><label for="sVol">Ovoz balandligi <span id="sVolV" class="num">60%</span></label><input type="range" id="sVol" min="0" max="1" step="0.05"></div>
+    <div class="field" hidden><label for="sMus">Musiqa (doira va dutor) <span id="sMusV" class="num">50%</span></label><input type="range" id="sMus" min="0" max="1" step="0.05"></div>
+    <div class="field"><label>FPS hisoblagichi</label>
+      <div class="seg" data-key="showFps"><button data-v="true">Koʻrsatish</button><button data-v="false">Yashirish</button></div></div>
+    <p style="font-size:12px;margin-top:8px">“Past” sifatda yorugʻlik effektlari (bloom, tezlik bluri) va soyalar oʻchadi — kuchsiz telefonlar uchun.</p>
+    <details class="credits"><summary>3D model mualliflari</summary><ul id="creditList"></ul></details>
+    <div class="row"><button class="btn primary grow" id="bSetBack">Tayyor</button></div>
+  </div>
+</section>
+
+<!-- Garage -->
+<section id="garage" class="screen scrim side" hidden>
+  <div class="sheet">
+    <span class="tag">Garaj</span>
+    <h2 id="gTitle">Mashina</h2>
+    <dl class="kv" id="gStats"></dl>
+    <h3>Mashinalarim</h3>
+    <div class="carlist" id="gCars"></div>
+    <h3>Soʻnggi toʻlovlar</h3>
+    <div class="tx" id="gTx"></div>
+    <div class="row"><button class="btn primary grow" id="bGarBack">Yopish</button></div>
+  </div>
+</section>
+
+<!-- Tuning -->
+<section id="tuning" class="screen side" hidden>
+  <div class="sheet">
+    <span class="tag">“Zarb” tyuning atelyesi</span>
+    <h2 id="tTitle">Tyuning</h2>
+    <div class="cashline num" id="tCash"></div>
+    <div id="tBody"></div>
+    <div class="note" id="tMsg"></div>
+    <div class="row"><button class="btn primary grow" id="bTuneBack">Tayyor</button></div>
+  </div>
+</section>
+
+<!-- Dealer -->
+<section id="dealer" class="screen side" hidden>
+  <div class="sheet">
+    <span class="tag">Avtosalon</span>
+    <h2 id="dTitle">Mashinalar</h2>
+    <div class="cashline num" id="dCash"></div>
+    <div class="carlist" id="dCars"></div>
+    <div id="dInfo"></div>
+    <div class="note" id="dMsg"></div>
+    <div class="row"><button class="btn uz grow" id="bDealTest" hidden>Sinov haydovi</button></div>
+    <div class="row" style="margin-top:8px"><button class="btn hot grow" id="bDealBuy">Sotib olish</button><button class="btn grow" id="bDealBack">Yopish</button></div>
+  </div>
+</section>
+
+<!-- Pause -->
+<section id="pause" class="screen scrim" hidden>
+  <div class="sheet">
+    <h2>Pauza</h2>
+    <div class="menu-btns">
+      <button class="btn primary" id="bResume">Davom etish</button>
+      <button class="btn" id="bPauseSet">Sozlamalar</button>
+      <button class="btn" id="bQuit">Saqlash va menyuga chiqish</button>
+    </div>
+  </div>
+</section>
+
+<!-- Mission board -->
+<section id="jobs" class="screen scrim" hidden>
+  <div class="sheet wide">
+    <span class="tag">Pul topish</span>
+    <h2>Missiyalar</h2>
+    <div hidden><h3>Bugungi topshiriqlar</h3>
+    <div class="quests" id="questList"></div></div>
+    <div class="jobs" id="jobList"></div>
+    <div class="row"><button class="btn grow" id="bJobsClose">Yopish</button></div>
+  </div>
+</section>
+
+<!-- Daily quests (from menu) -->
+<section id="questsModal" class="screen scrim" hidden>
+  <div class="sheet">
+    <span class="tag">Har kuni yangilanadi</span>
+    <h2>Kunlik topshiriqlar</h2>
+    <p>Topshiriqni bajaring, keyin “Olish” tugmasini bosib mukofotni oling. Ertaga yangilari chiqadi.</p>
+    <div class="quests" id="questList2"></div>
+    <div class="row"><button class="btn primary grow" id="bQuestsClose">Yopish</button></div>
+  </div>
+</section>
+
+<!-- Results -->
+<section id="results" class="screen scrim" hidden>
+  <div class="sheet">
+    <span class="tag" id="rTag">Natija</span>
+    <h2 id="rTitle"></h2>
+    <dl class="kv" id="rKv"></dl>
+    <div class="row" id="rBtns"></div>
+  </div>
+</section>
+
+<!-- Map -->
+<section id="mapModal" class="screen scrim" hidden>
+  <div class="sheet wide">
+    <h2>Shahar xaritasi</h2>
+    <div class="mapwrap">
+      <canvas id="bigmap" width="560" height="560"></canvas>
+      <div class="navlist" id="navList"></div>
+    </div>
+    <div class="row" style="margin-top:14px"><button class="btn primary grow" id="bMapClose">Yopish</button></div>
+  </div>
+</section>
+
+<section id="rotate" class="screen" hidden>
+  <div class="load-box" style="text-align:center">
+    <h2 style="font-family:var(--display);font-style:italic;text-transform:uppercase">Telefonni yotqizing</h2>
+    <p style="color:var(--muted)">Oʻyin gorizontal ekranda qulayroq.</p>
+    <button class="btn" id="bRotIgnore">Baribir davom etish</button>
+  </div>
+</section>
+
+<!-- HUD -->
+<div id="hud" hidden>
+  <div class="tl panel">
+    <div class="cash num" id="hCash">0 soʻm</div>
+    <div class="lvl"><span id="hLvl">1-daraja</span><div class="bar"><i id="hXp"></i></div></div>
+    <div class="clock num" id="hClock">07:00 · Tong</div>
+    <div class="coins" hidden><i></i><span id="hCoins" class="num">0</span>&nbsp;tanga</div>
+    <div class="stat" id="sFuel" title="Yoqilgʻi"><svg viewBox="0 0 24 24" fill="none" stroke="#ffb020" stroke-width="2"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3M6 8h6"/></svg><div class="bar"><i id="hFuel" style="background:var(--gold)"></i></div><span class="num" id="hFuelT">45L</span></div>
+    <div class="stat" id="sCond" title="Holati"><svg viewBox="0 0 24 24" fill="none" stroke="#5dff9b" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><div class="bar"><i id="hCond" style="background:var(--ok)"></i></div><span class="num" id="hCondT">100%</span></div>
+    <div class="stat" title="Iflosligi"><svg viewBox="0 0 24 24" fill="none" stroke="#c9a679" stroke-width="2"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></svg><div class="bar"><i id="hDirt" style="background:#c9a679"></i></div><span class="num" id="hDirtT">0%</span></div>
+  </div>
+
+  <div class="tr">
+    <div class="tools">
+      <button class="ibtn" id="tPause" aria-label="Pauza" title="Pauza"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button>
+      <button class="ibtn hl" id="tJob" aria-label="Missiyalar" title="Missiyalar (J)"><svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></button>
+      <button class="ibtn" id="tMap" aria-label="Xarita va GPS" title="Xarita (M)"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z M9 4v14 M15 6v14"/></svg></button>
+      <button class="ibtn" id="tCam" aria-label="Kamerani almashtirish" title="Kamera (C)"><svg viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+      <button class="ibtn" id="tReset" aria-label="Mashinani tiklash" title="Yoʻlga qaytarish (R)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg></button>
+      <button class="ibtn" id="tEngine" aria-label="Dvigatelni yoqish yoki oʻchirish" title="Dvigatel (E)"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 7a8 8 0 1 0 11.4 0"/></svg></button>
+    </div>
+    <canvas id="mini" width="420" height="420" aria-label="Minikarta"></canvas>
+  </div>
+
+  <div id="mcard" class="panel" hidden>
+    <span class="tag" id="mcTag"></span>
+    <div class="dest" id="mcDest"></div>
+    <div class="meta num"><span id="mcTime"></span><span id="mcDist"></span></div>
+  </div>
+  <div id="big" style="opacity:0"></div>
+
+  <div id="svc" class="panel" hidden></div>
+  <div id="toast" class="panel" style="opacity:0">.</div>
+
+  <div id="gauge" class="panel">
+    <div class="g-top">
+      <div class="g-spd num" id="gSpdT">0</div>
+      <div class="g-unit"><div class="g-gear" id="gGear">D1</div><small>KM/SOAT</small></div>
+    </div>
+    <div class="segbar"><i id="gRpm"></i></div>
+    <div class="segbar nitro" id="gNitroW" hidden><i id="gNitro"></i></div>
+    <div class="g-rpm"><span id="gRpmT" class="num">850</span><span id="gNitroT" hidden>NITRO</span></div>
+  </div>
+  <div id="fps" class="panel num" hidden>60 FPS</div>
+  <div class="lookhint" id="lookHint">Ekranni suring — mashinani har tomondan koʻring</div>
+  <div id="keys" class="panel" hidden>
+    <div><kbd>W</kbd><kbd>S</kbd> gaz / tormoz · <kbd>A</kbd><kbd>D</kbd> rul · <kbd>Probel</kbd> qoʻl tormozi</div>
+    <div><kbd>J</kbd> missiyalar · <kbd>M</kbd> xarita · <kbd>Shift</kbd> nitro · <kbd>C</kbd> kamera · <kbd>L</kbd> sirena</div>
+  </div>
+</div>
+
+<!-- Touch controls -->
+<div id="touch" hidden>
+  <div id="wheel" aria-label="Rul">
+    <svg viewBox="0 0 148 148"><g id="wheelG" transform="rotate(0 74 74)">
+      <circle cx="74" cy="74" r="66" fill="rgba(7,10,22,0.55)" stroke="#19e3ff" stroke-opacity=".8" stroke-width="9"/>
+      <circle cx="74" cy="74" r="16" fill="#f1f5ff" fill-opacity=".85"/>
+      <path d="M8 74 H58 M90 74 H140 M74 90 V140" stroke="#f1f5ff" stroke-opacity=".75" stroke-width="9" stroke-linecap="round"/>
+      <rect x="69" y="4" width="10" height="12" rx="3" fill="#ff2e88"/>
+    </g></svg>
+  </div>
+  <div class="sbtns" hidden>
+    <button class="pad" id="pLeft" aria-label="Chapga"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="pad" id="pRight" aria-label="Oʻngga"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  </div>
+  <div class="pedals">
+    <div class="minis">
+      <button class="pad" id="pNitro" aria-label="Nitro" hidden>N₂O</button>
+      <button class="pad" id="pSiren" aria-label="Sirena" hidden>🚨</button>
+      <button class="pad" id="pHand" aria-label="Qoʻl tormozi">P</button>
+      <button class="pad" id="pGear" aria-label="Uzatma D yoki R">D</button>
+      <button class="pad" id="pHorn" aria-label="Signal"><svg viewBox="0 0 24 24" style="width:20px;height:20px"><path d="M4 10v4h3l5 4V6L7 10z M16 9a4 4 0 0 1 0 6"/></svg></button>
+    </div>
+    <button class="pad" id="pBrake" aria-label="Tormoz">TORMOZ</button>
+    <button class="pad" id="pGas" aria-label="Gaz">GAZ</button>
+  </div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script>if (!window.THREE) document.getElementById("loadTxt").textContent = "Oʻyin fayllari yuklanmadi. Sahifani yangilang.";</script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/SkeletonUtils.js"></script>
+<script src="core.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/world.js"></script>
+<script src="js/models.js"></script>
+<script src="js/cars.js"></script>
+<script src="js/life.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
